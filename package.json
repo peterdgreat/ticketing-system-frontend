@@ -13,7 +13,10 @@
   "dependencies": {
     "@apollo/client": "^3.13.8",
     "@tailwindcss/vite": "^4.1.11",
+    "@vue/apollo-composable": "^4.2.2",
+    "@vue/apollo-option": "^4.2.2",
     "apollo-upload-client": "^18.0.1",
+    "@types/apollo-upload-client": "^17.0.5",
     "autoprefixer": "^10.4.21",
     "axios": "^1.10.0",
     "graphql": "^16.11.0",
