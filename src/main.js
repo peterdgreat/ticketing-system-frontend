@@ -1,41 +1,55 @@
 import './style.css';
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { ApolloClient, InMemoryCache } from '@apollo/client/core';
+import { ApolloClient, InMemoryCache, ApolloLink } from '@apollo/client/core';
 import { createApolloProvider } from '@vue/apollo-option';
-// Add this import
 import { DefaultApolloClient } from '@vue/apollo-composable';
 import createUploadLink from 'apollo-upload-client/createUploadLink.mjs';
 import App from './App.vue'
-import router from './router'
+import router from './router/auth'
 
-// Apollo Client setup
 const httpLink = createUploadLink({
   uri: 'http://localhost:3000/graphql',
-  headers: {
-    get Authorization() {
-      return `Bearer ${localStorage.getItem('token') || ''}`;
-    },
-  },
 });
 
-const apolloClient = new ApolloClient({
-  link: httpLink,
+
+const authLink = new ApolloLink((operation, forward) => {
+  const operationName = operation.operationName;
+
+  if (operationName === 'SignUp' || operationName === 'login') {
+    return forward(operation);
+  }
+
+  const token = localStorage.getItem('token');
+  if (token) {
+    operation.setContext({
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }
+
+  return forward(operation);
+});
+
+const client = new ApolloClient({
+  link: authLink.concat(httpLink),
   cache: new InMemoryCache(),
 });
 
+export default client;
 const apolloProvider = createApolloProvider({
-  defaultClient: apolloClient,
+  defaultClient: client,
 });
 
 const app = createApp(App);
 
-// Modify this section to provide the Apollo client for the Composition API
+
 app.use(createPinia());
 app.use(router);
 app.use(apolloProvider);
 
-// Add this line to provide the Apollo client for the Composition API
-app.provide(DefaultApolloClient, apolloClient);
+
+app.provide(DefaultApolloClient, client);
 
 app.mount('#app');

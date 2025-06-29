@@ -19,6 +19,7 @@ const { mutate: createTicketMutation } = useMutation(gql`
   }
 `);
 
+const emit = defineEmits(['ticket-created']);
 const createTicket = async () => {
   try {
     await createTicketMutation({
@@ -28,13 +29,12 @@ const createTicket = async () => {
     title.value = '';
     description.value = '';
     error.value = null;
-    //emit('ticket-created');
+    emit('ticket-created');
   } catch (err) {
     error.value = err.message.replace('GraphQL error: ', '');
   }
 };
 
-//defineEmits(['ticket-created']);
 </script>
 <template>
   <div class="bg-white p-6 rounded shadow mb-6">
