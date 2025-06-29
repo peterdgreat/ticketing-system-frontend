@@ -6,7 +6,7 @@ import { createApolloProvider } from '@vue/apollo-option';
 import { DefaultApolloClient } from '@vue/apollo-composable';
 import createUploadLink from 'apollo-upload-client/createUploadLink.mjs';
 import App from './App.vue'
-import router from './router/auth'
+import router from './router/route'
 
 const httpLink = createUploadLink({
   uri: 'http://localhost:3000/graphql',
