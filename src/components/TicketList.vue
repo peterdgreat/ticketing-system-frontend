@@ -1,16 +1,16 @@
 <script setup>
-import { useAuthStore } from '../stores/index';
+import { useAuthStore } from '../stores/auth'
 
 defineProps({
   tickets: {
     type: Array,
-    required: true
-  }
+    required: true,
+  },
 })
-const authStore = useAuthStore();
+const authStore = useAuthStore()
 </script>
 <template>
-<div class="bg-white p-6 rounded shadow">
+  <div class="bg-white p-6 rounded shadow">
     <h3 class="text-lg font-bold mb-4">Ticket List</h3>
     <table class="w-full border-collapse">
       <thead>
@@ -19,7 +19,7 @@ const authStore = useAuthStore();
           <th class="p-2 text-left">Title</th>
           <th class="p-2 text-left">Status</th>
           <th class="p-2 text-left">Customer ID</th>
-          <th v-if="authStore.isAgent" class="p-2 text-left">Assigned To</th>
+          <th v-if="authStore.isAgent()" class="p-2 text-left">Assigned To</th>
         </tr>
       </thead>
       <tbody>
@@ -32,7 +32,7 @@ const authStore = useAuthStore();
           </td>
           <td class="p-2">{{ ticket.status }}</td>
           <td class="p-2">{{ ticket.user.id }}</td>
-          <td v-if="authStore.isAgent" class="p-2">{{ 'Unassigned' }}</td>
+          <td v-if="authStore.isAgent()" class="p-2">{{ 'Unassigned' }}</td>
         </tr>
         <tr v-if="!tickets.length" class="border-b">
           <td colspan="7" class="p-2 text-center">No tickets found</td>

@@ -1,18 +1,17 @@
 <script setup>
-import {ref} from 'vue'
-import { useRouter } from 'vue-router';
-import {useAuthStore} from '../stores'
-import {useMutation} from '@vue/apollo-composable'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+import { useMutation } from '@vue/apollo-composable'
 import gql from 'graphql-tag'
 
 const email = ref('')
 const error = ref('')
 const password = ref('')
 const authStore = useAuthStore()
-const router = useRouter();
+const router = useRouter()
 
-const {mutate: loginMutation} = useMutation(gql
-  `
+const { mutate: loginMutation } = useMutation(gql`
   mutation Login($email: String!, $password: String!) {
     login(email: $email, password: $password) {
       token
@@ -23,23 +22,18 @@ const {mutate: loginMutation} = useMutation(gql
       }
     }
   }
-  `
-);
-const login = async() => {
+`)
+const login = async () => {
   try {
-  const {data} = await loginMutation(
-    {
+    const { data } = await loginMutation({
       email: email.value,
-      password: password.value
-    }
-  );
-  authStore.setUser(data.login.user, data.login.token);
-  router.push('/tickets');
-
-}
-catch(err){
-  error.value = err.message.replace('GraphQL error: ', '');
-}
+      password: password.value,
+    })
+    authStore.setUser(data.login.user, data.login.token)
+    router.push('/tickets')
+  } catch (err) {
+    error.value = err.message.replace('GraphQL error: ', '')
+  }
 }
 </script>
 <template>
@@ -75,5 +69,4 @@ catch(err){
   </div>
 </template>
 
-<style>
-</style>
+<style></style>

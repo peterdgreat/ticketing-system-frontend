@@ -1,14 +1,14 @@
 <script setup>
-import {ref} from 'vue'
-import {useAuthStore} from '../stores'
-import { useMutation } from '@vue/apollo-composable';
-import gql from 'graphql-tag';
+import { ref } from 'vue'
+import { useAuthStore } from '../stores/auth'
+import { useMutation } from '@vue/apollo-composable'
+import gql from 'graphql-tag'
 
-const email = ref('');
-const error = ref('');
-const password = ref('');
-const role = ref('customer');
-const authStore = useAuthStore();
+const email = ref('')
+const error = ref('')
+const password = ref('')
+const role = ref('customer')
+const authStore = useAuthStore()
 
 const { mutate: signUpMutation } = useMutation(gql`
   mutation SignUp($email: String!, $password: String!, $role: String!) {
@@ -21,7 +21,7 @@ const { mutate: signUpMutation } = useMutation(gql`
       }
     }
   }
-`);
+`)
 
 const signUp = async () => {
   try {
@@ -29,13 +29,13 @@ const signUp = async () => {
       email: email.value,
       password: password.value,
       role: role.value,
-    });
-    authStore.setUser(data.signUp.user, data.signUp.token);
+    })
+    authStore.setUser(data.signUp.user, data.signUp.token)
     // router.push('/tickets');
   } catch (err) {
-    error.value = err.message.replace('GraphQL error: ', '');
+    error.value = err.message.replace('GraphQL error: ', '')
   }
-};
+}
 </script>
 <template>
   <div class="max-w-md mx-auto bg-white p-6 rounded shadow">
@@ -43,14 +43,23 @@ const signUp = async () => {
     <form @submit.prevent="signUp">
       <div class="mb-4">
         <label class="block text-sm font-medium">Email</label>
-        <input v-model="email" type="email" required placeholder="Email"
-        class="w-full p-2 border rounded" />
+        <input
+          v-model="email"
+          type="email"
+          required
+          placeholder="Email"
+          class="w-full p-2 border rounded"
+        />
       </div>
       <div class="mb-4">
         <label class="block text-sm font-medium">Password</label>
         <input
-         type="password" v-model="password" required placeholder="Password"
-         class="w-full p-2 border rounded" />
+          type="password"
+          v-model="password"
+          required
+          placeholder="Password"
+          class="w-full p-2 border rounded"
+        />
       </div>
 
       <div class="mb-4">
