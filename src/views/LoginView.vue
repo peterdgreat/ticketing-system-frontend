@@ -1,5 +1,6 @@
 <script setup>
 import {ref} from 'vue'
+import { useRouter } from 'vue-router';
 import {useAuthStore} from '../stores'
 import {useMutation} from '@vue/apollo-composable'
 import gql from 'graphql-tag'
@@ -8,6 +9,7 @@ const email = ref('')
 const error = ref('')
 const password = ref('')
 const authStore = useAuthStore()
+const router = useRouter();
 
 const {mutate: loginMutation} = useMutation(gql
   `
@@ -32,6 +34,7 @@ const login = async() => {
     }
   );
   authStore.setUser(data.login.user, data.login.token);
+  router.push('/tickets');
 
 }
 catch(err){
