@@ -72,6 +72,9 @@ const signUp = async () => {
         </select>
       </div>
       <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded">Submit</button>
+      <p class="mt-4">
+        Already have an account? <router-link to="/login" class="text-blue-600">Log in</router-link>
+      </p>
     </form>
   </div>
 </template>

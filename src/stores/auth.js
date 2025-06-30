@@ -1,22 +1,22 @@
 import { defineStore } from 'pinia'
-import {  useApolloClient } from '@vue/apollo-composable';
-import gql from 'graphql-tag';
+import { useApolloClient } from '@vue/apollo-composable'
+import gql from 'graphql-tag'
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user:  null,
-    token: localStorage.getItem('token') ||null,
+    user: null,
+    token: localStorage.getItem('token') || null,
   }),
-  actions:
-  {
+  actions: {
     async restoreUser() {
       if (!this.token) {
-        return false;
+        return false
       }
       if (this.user) {
-        return true;
+        return true
       }
       try {
-        const { client } = useApolloClient();
+        const { client } = useApolloClient()
         const { data } = await client.query({
           query: gql`
             query {
@@ -32,41 +32,36 @@ export const useAuthStore = defineStore('auth', {
               Authorization: `Bearer ${this.token}`,
             },
           },
-        });
-        this.user = data.user;
-        localStorage.setItem('user', JSON.stringify(this.user));
-        return true;
+        })
+        this.user = data.user
+        localStorage.setItem('user', JSON.stringify(this.user))
+        return true
       } catch {
-        this.signout();
-        return false;
+        this.signout()
+        return false
       }
-    }
-    ,
-    setUser(user,token){
-      this.user = user;
+    },
+    setUser(user, token) {
+      this.user = user
       this.token = token
       localStorage.setItem('token', token)
     },
-    signin(user,token){
+    signin(user, token) {
       this.user = user
-      this.token= token
+      this.token = token
       localStorage.setItem('token', token)
-
     },
-    signout(){
+    signout() {
       this.user = null
       this.token = null
       localStorage.removeItem('token')
+      localStorage.removeItem('user')
     },
-    isAgent(){
+    isAgent() {
       return this.user?.role === 'agent'
     },
-    isCustomer(){
+    isCustomer() {
       return this.user?.role === 'customer'
-    }
+    },
   },
-
-
-
 })
-

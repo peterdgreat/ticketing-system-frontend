@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import SignUpView from '@/views/SignUpView.vue'
 import LoginView from '@/views/LoginView.vue'
-import TicketForm from '@/components/TicketForm.vue'
+import TicketForm from '@/views/TicketFormView.vue'
 import TicketsView from '@/views/TicketsView.vue'
 import TicketView from '@/views/TicketView.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -26,7 +26,7 @@ const router = createRouter({
       component: LoginView,
     },
     {
-      path: '/ticketform',
+      path: '/tickets/new',
       name: 'ticketform',
       component: TicketForm,
       meta: { requiresAuth: true },
@@ -39,28 +39,24 @@ const router = createRouter({
     },
     {
       path: '/tickets/:id',
-      component:TicketView,
+      component: TicketView,
       meta: { requiresAuth: true },
-    }
-
+    },
   ],
 })
 
 router.beforeEach(async (to, from, next) => {
-  const authStore = useAuthStore();
-  console.log(`Router: To ${to.path}, user:`, authStore.user);
+  const authStore = useAuthStore()
   if (to.meta.requiresAuth) {
-    const restored = await authStore.restoreUser();
-    console.log('Router: Restored user:', authStore.user);
+    const restored = await authStore.restoreUser()
     if (!restored || !authStore.user) {
-      console.log('Router: No user, redirecting');
-      next('/login');
+      next('/login')
     } else {
-      next();
+      next()
     }
   } else {
-    next();
+    next()
   }
-});
+})
 
 export default router

@@ -4,6 +4,11 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useQuery, useMutation } from '@vue/apollo-composable'
 import gql from 'graphql-tag'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+
+
+dayjs.extend(relativeTime)
 
 const authStore = useAuthStore()
 const route = useRoute()
@@ -12,10 +17,9 @@ const newStatus = ref('')
 const comments = ref([])
 const newComment = ref('')
 const attachments = ref([])
-const selectedFile = ref(null);
-const fileInput = ref(null);
-const loadingAttachments = ref(true)
-const attachmentError = ref(null)
+const selectedAttachment = ref(null)
+const backendUrl = 'http://localhost:3000'
+
 const { result, loading, error, refetch } = useQuery(
   gql`
     query ticket($id: ID!) {
@@ -24,23 +28,46 @@ const { result, loading, error, refetch } = useQuery(
         title
         description
         status
+        createdAt
         user {
           id
           email
         }
-        comments {
+        attachments {
           id
-          content
-          user {
-            id
-            email
-          }
+          fileName
+          fileUrl
+          fileType
+          fileSize
+          createdAt
         }
       }
     }
   `,
   () => ({
     id: route.params.id,
+  }),
+)
+const {
+  result: commentResult,
+  loading: commentLoading,
+  error: commentError,
+  refetch: commentRefetch,
+} = useQuery(
+  gql`
+    query comments($ticketId: ID!) {
+      comments(ticketId: $ticketId) {
+        id
+        content
+        createdAt
+        user {
+          email
+        }
+      }
+    }
+  `,
+  () => ({
+    ticketId: route.params.id,
   }),
 )
 
@@ -68,39 +95,13 @@ const { mutate: addCommentMutation } = useMutation(gql`
   }
 `)
 
-const {mutate: uploadAttachmentMutation} = useMutation(gql `
-mutation UploadAttachment($ticketId: ID!, $file: Upload!){
-  uploadAttachment(ticketId: $ticketId, file: $file){
-    id
-    fileName
-    fileUrl
-    createdAt
-  }
-}
-
-`)
-const {result: attachmentsResult, loading: attachmentsLoading, error: attachmentsError, refetch: attachmentsRefetch} = useQuery(
-  gql`
-  query attachments($ticketId: ID!){
-    attachments(ticketId: $ticketId){
-      id
-      fileName
-      fileUrl
-      createdAt
-    }
-
-  }`,
-  () => ({
-    ticketId: route.params.id,
-  }),
-)
 const addComment = async () => {
   try {
     await addCommentMutation({
       ticketId: ticket.value.id,
       content: newComment.value,
     })
-    refetch()
+    commentRefetch()
     newComment.value = ''
   } catch (e) {
     console.error(e)
@@ -113,31 +114,21 @@ const updateStatus = async () => {
         id: ticket.value.id,
         status: newStatus.value,
       })
+      refetch()
     } catch (e) {
       console.error(e)
     }
   }
 }
 
-const onFileSelected = (event) => {
-  selectedFile.value = event.target.files[0];
+const openAttachment = (attachment) => {
+  selectedAttachment.value = attachment
 }
 
-const uploadAttachment = async () => {
-  if (selectedFile.value){
-    try{
-      await uploadAttachmentMutation({
-        ticketId: ticket.value.id,
-        file: selectedFile.value,
-      })
-      attachmentsRefetch();
-    }
-    catch(e){
-      attachmentsError.value = e
-    console.error(e)
-  }
-  }
+const getAttachmentUrl = (fileUrl) => {
+  return fileUrl.startsWith('http') ? fileUrl : `${backendUrl}${fileUrl}`
 }
+
 
 
 watch(
@@ -146,93 +137,217 @@ watch(
     if (newResult.ticket) {
       ticket.value = newResult.ticket
       newStatus.value = newResult.ticket.status
-      if (newResult.ticket.comments) {
-        comments.value = newResult.ticket.comments
-      }
+      attachments.value = newResult.ticket.attachments
     }
-    console.log(ticket)
   },
 )
 
 watch(
-  ()=>attachmentsResult.value,
+  () => commentResult.value,
   (newResult) => {
-    if (newResult.attachments){
-      attachments.value = newResult.attachments
+    if (newResult.comments) {
+      comments.value = newResult.comments
     }
-    loadingAttachments.value = attachmentsLoading.value;
-    attachmentError.value = attachmentsError.value;
-  }
+  },
 )
-
-
 </script>
 
 <template>
-  <div v-if="loading">Loading</div>
-  <div v-else-if="error">
-    {{ error.message }}
+  <div v-if="loading" class="container mx-auto p-4">
+    <div class="text-center text-gray-500">Loading...</div>
   </div>
-  <div class="container mx-auto p-4" v-else>
-    <h2 class="text-2xl font-bold mb-4">Ticket #{{ ticket.id }}</h2>
-    <div class="bg-gray-100 p-4 rounded">
-      <p><strong>Title:</strong> {{ ticket.title }}</p>
-      <p><strong>Description:</strong> {{ ticket.description }}</p>
-      <p><strong>Status:</strong> {{ ticket.status }}</p>
-      <p v-if="authStore.isAgent()"><strong>Created by:</strong> {{ ticket.user.email }}</p>
-    </div>
-    <div v-if="authStore.isAgent()">
-      <label for="status" class="mr-2">Update Status:</label>
-      <select v-model="newStatus" id="status" class="border p-2 rounded" @change="updateStatus">
-        <option value="open">Open</option>
-        <option value="pending">Pending</option>
-        <option value="resolved">Resolved</option>
-        <option value="closed">Closed</option>
-      </select>
+  <div v-else-if="error" class="container mx-auto p-4">
+    <div class="text-center text-red-500">{{ error.message }}</div>
+  </div>
+  <div v-else class="container mx-auto p-4 sm:p-6">
+    <div class="mb-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-2xl sm:text-3xl font-bold text-gray-800">
+          Ticket #{{ ticket.id }}: {{ ticket.title }}
+        </h2>
+        <div class="flex justify-between w-80">
+          <span
+            :class="{
+              'inline-block px-3 py-1 rounded-full text-sm font-medium': true,
+              'bg-green-100 text-green-800': ticket.status === 'open',
+              'bg-yellow-100 text-yellow-800': ticket.status === 'pending',
+              'bg-red-100 text-red-800': ticket.status === 'closed' || ticket.status === 'resolved',
+            }"
+          >
+            {{ ticket.status.toUpperCase() }}
+          </span>
+          <router-link
+            to="/tickets"
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium"
+          >
+            {{ authStore.isAgent() ? 'All Tickets' : 'My Tickets' }}
+          </router-link>
+        </div>
+      </div>
+      <p class="text-sm text-gray-500 mt-1">
+        Created {{ dayjs(ticket.createdAt).fromNow() }}
+        <span v-if="authStore.isAgent()"> by {{ ticket.user.email }}</span>
+      </p>
     </div>
 
-    <div>
-      <h2>Attachments</h2>
-      <form @submit.prevent="uploadAttachment" class="mb-4">
-        <input
-          type="file"
-          ref="fileInput"
-          @change="onFileSelected"
-          class="border p-2 rounded"
-          accept="image/*,application/pdf"
+    <!-- Main Content and Sidebar -->
+    <div class="flex flex-col lg:flex-row gap-6">
+      <div class="flex-1">
+        <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Description</h3>
+          <p class="text-gray-600">{{ ticket.description || 'No description provided' }}</p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Comments</h3>
+          <div v-if="commentLoading" class="text-gray-500">Loading comments...</div>
+          <div v-else-if="commentError" class="text-red-500">{{ commentError.message }}</div>
+          <div v-else-if="comments.length === 0" class="text-gray-500">No comments yet</div>
+          <div v-else class="space-y-4">
+            <div
+              v-for="comment in comments"
+              :key="comment.id"
+              :class="{
+                'p-4 rounded-lg': true,
+                'bg-blue-50 ml-8': comment.user.email === authStore.user?.email,
+                'bg-gray-100 mr-8': comment.user.email !== authStore.user?.email,
+              }"
+            >
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium text-gray-800">{{ comment.user.email }}</p>
+                <p class="text-xs text-gray-500">{{ dayjs(comment.createdAt).fromNow() }}</p>
+              </div>
+              <p class="text-gray-600 mt-1">{{ comment.content }}</p>
+            </div>
+          </div>
+
+          <form @submit.prevent="addComment" class="mt-6">
+            <textarea
+              v-model="newComment"
+              placeholder="Leave a comment..."
+              class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows="4"
+              required
+            ></textarea>
+            <button
+              type="submit"
+              class="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Add Comment
+            </button>
+          </form>
+        </div>
+
+        <div v-if="authStore.isAgent()" class="mt-6">
+          <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
+            Update Status
+          </label>
+          <select
+            v-model="newStatus"
+            id="status"
+            class="border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            @change="updateStatus"
+          >
+            <option value="open">Open</option>
+            <option value="pending">Pending</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="lg:w-80">
+        <div class="bg-white rounded-lg shadow p-4 sm:p-6 sticky top-4">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Attachments</h3>
+          <div v-if="attachments.length === 0" class="text-gray-500 text-sm">No attachments</div>
+          <ul v-else class="space-y-3">
+            <li v-for="attachment in attachments" :key="attachment.id">
+              <div
+                class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                @click="openAttachment(attachment)"
+              >
+                <img
+                  v-if="attachment.fileType.startsWith('image/')"
+                  :src="getAttachmentUrl(attachment.fileUrl)"
+                  :alt="attachment.fileName"
+                  class="w-12 h-12 object-cover rounded"
+                />
+                <svg
+                  v-else
+                  class="w-12 h-12 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  ></path>
+                </svg>
+                <div>
+                  <p class="text-sm font-medium text-gray-800 truncate">
+                    {{ attachment.fileName }}
+                  </p>
+                  <p class="text-xs text-gray-500">
+                    {{ dayjs(attachment.createdAt).fromNow() }}
+                  </p>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="selectedAttachment"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      @click="selectedAttachment = null"
+    >
+      <div class="bg-white rounded-lg p-4 max-w-3xl max-h-[80vh] overflow-auto" @click.stop>
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-gray-800">
+            {{ selectedAttachment.fileName }}
+          </h3>
+          <button class="text-gray-500 hover:text-gray-700" @click="selectedAttachment = null">
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              ></path>
+            </svg>
+          </button>
+        </div>
+        <img
+          v-if="selectedAttachment.fileType.startsWith('image/')"
+          :src="getAttachmentUrl(selectedAttachment.fileUrl)"
+          :alt="selectedAttachment.fileName"
+          class="max-w-full max-h-[60vh] object-contain"
         />
-        <button
-          type="submit"
-          class="mt-2 bg-blue-500 text-white p-2 rounded"
-          :disabled="!selectedFile"
-        >
-          Upload Attachment
-        </button>
-      </form>
-      <div v-if="attachments.length > 0">
-        <h3 class="text-lg font-bold mb-2">Uploaded Attachments</h3>
-        <ul>
-          <li v-for="attachment in attachments" :key="attachment.id">
-            <a :href="attachment.fileUrl" target="_blank">{{ attachment.fileName }} ({{ attachment.createdAt }})</a>
-          </li>
-        </ul>
+        <div v-else class="text-center">
+          <p class="text-gray-600 mb-4">
+            {{ selectedAttachment.fileName }} ({{ selectedAttachment.fileType }})
+          </p>
+          <a
+            :href="getAttachmentUrl(selectedAttachment.fileUrl)"
+            target="_blank"
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Download
+          </a>
+        </div>
       </div>
     </div>
-    <div v-if="comments.length > 0" class="mt-4">
-      <h3 class="text-lg font-bold mb-2">Comments</h3>
-      <div v-for="comment in comments" :key="comment.id" class="bg-gray-100 p-4 rounded mb-2">
-        <p><strong>User:</strong> {{ comment.user.email }}</p>
-        <p>{{ comment.content }}</p>
-      </div>
-    </div>
-    <form @submit.prevent="addComment" class="mb-4">
-      <textarea
-        v-model="newComment"
-        placeholder="Add a comment..."
-        class="border p-2 w-full rounded"
-        required
-      ></textarea>
-      <button type="submit" class="mt-2 bg-blue-500 text-white p-2 rounded">Post Comment</button>
-    </form>
   </div>
 </template>
