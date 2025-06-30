@@ -11,6 +11,11 @@ const ticket = ref(null)
 const newStatus = ref('')
 const comments = ref([])
 const newComment = ref('')
+const attachments = ref([])
+const selectedFile = ref(null);
+const fileInput = ref(null);
+const loadingAttachments = ref(true)
+const attachmentError = ref(null)
 const { result, loading, error, refetch } = useQuery(
   gql`
     query ticket($id: ID!) {
@@ -62,6 +67,33 @@ const { mutate: addCommentMutation } = useMutation(gql`
     }
   }
 `)
+
+const {mutate: uploadAttachmentMutation} = useMutation(gql `
+mutation UploadAttachment($ticketId: ID!, $file: Upload!){
+  uploadAttachment(ticketId: $ticketId, file: $file){
+    id
+    fileName
+    fileUrl
+    createdAt
+  }
+}
+
+`)
+const {result: attachmentsResult, loading: attachmentsLoading, error: attachmentsError, refetch: attachmentsRefetch} = useQuery(
+  gql`
+  query attachments($ticketId: ID!){
+    attachments(ticketId: $ticketId){
+      id
+      fileName
+      fileUrl
+      createdAt
+    }
+
+  }`,
+  () => ({
+    ticketId: route.params.id,
+  }),
+)
 const addComment = async () => {
   try {
     await addCommentMutation({
@@ -74,6 +106,39 @@ const addComment = async () => {
     console.error(e)
   }
 }
+const updateStatus = async () => {
+  if (newStatus.value) {
+    try {
+      await updateTicketMutation({
+        id: ticket.value.id,
+        status: newStatus.value,
+      })
+    } catch (e) {
+      console.error(e)
+    }
+  }
+}
+
+const onFileSelected = (event) => {
+  selectedFile.value = event.target.files[0];
+}
+
+const uploadAttachment = async () => {
+  if (selectedFile.value){
+    try{
+      await uploadAttachmentMutation({
+        ticketId: ticket.value.id,
+        file: selectedFile.value,
+      })
+      attachmentsRefetch();
+    }
+    catch(e){
+      attachmentsError.value = e
+    console.error(e)
+  }
+  }
+}
+
 
 watch(
   () => result.value,
@@ -89,22 +154,22 @@ watch(
   },
 )
 
+watch(
+  ()=>attachmentsResult.value,
+  (newResult) => {
+    if (newResult.attachments){
+      attachments.value = newResult.attachments
+    }
+    loadingAttachments.value = attachmentsLoading.value;
+    attachmentError.value = attachmentsError.value;
+  }
+)
+
 onMounted(async () => {
   await authStore.restoreUser()
 })
 
-const updateStatus = async () => {
-  if (newStatus.value) {
-    try {
-      await updateTicketMutation({
-        id: ticket.value.id,
-        status: newStatus.value,
-      })
-    } catch (e) {
-      console.error(e)
-    }
-  }
-}
+
 </script>
 
 <template>
@@ -128,6 +193,34 @@ const updateStatus = async () => {
         <option value="resolved">Resolved</option>
         <option value="closed">Closed</option>
       </select>
+    </div>
+
+    <div>
+      <h2>Attachments</h2>
+      <form @submit.prevent="uploadAttachment" class="mb-4">
+        <input
+          type="file"
+          ref="fileInput"
+          @change="onFileSelected"
+          class="border p-2 rounded"
+          accept="image/*,application/pdf"
+        />
+        <button
+          type="submit"
+          class="mt-2 bg-blue-500 text-white p-2 rounded"
+          :disabled="!selectedFile"
+        >
+          Upload Attachment
+        </button>
+      </form>
+      <div v-if="attachments.length > 0">
+        <h3 class="text-lg font-bold mb-2">Uploaded Attachments</h3>
+        <ul>
+          <li v-for="attachment in attachments" :key="attachment.id">
+            <a :href="attachment.fileUrl" target="_blank">{{ attachment.fileName }} ({{ attachment.createdAt }})</a>
+          </li>
+        </ul>
+      </div>
     </div>
     <div v-if="comments.length > 0" class="mt-4">
       <h3 class="text-lg font-bold mb-2">Comments</h3>
