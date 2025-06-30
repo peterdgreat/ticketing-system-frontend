@@ -1,5 +1,5 @@
 <script setup>
-import { watch, ref, onMounted } from 'vue'
+import { watch, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useQuery, useMutation } from '@vue/apollo-composable'
@@ -164,10 +164,6 @@ watch(
     attachmentError.value = attachmentsError.value;
   }
 )
-
-onMounted(async () => {
-  await authStore.restoreUser()
-})
 
 
 </script>

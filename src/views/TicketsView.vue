@@ -1,6 +1,5 @@
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, watch, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useQuery } from '@vue/apollo-composable'
 import gql from 'graphql-tag'
@@ -8,10 +7,7 @@ import TicketList from '../components/TicketList.vue'
 import TicketForm from '../components/TicketForm.vue'
 
 const authStore = useAuthStore()
-const router = useRouter()
-
 console.log(`Authstore user${authStore}`)
-const restoring = ref(true)
 const tickets = ref([])
 
 const { result, loading, error, refetch } = useQuery(gql`
@@ -29,21 +25,6 @@ const { result, loading, error, refetch } = useQuery(gql`
     }
   }
 `)
-onMounted(async () => {
-  console.log(`Iagent ${authStore.isAgent()}`)
-  console.log(`custome ${authStore.isCustomer()}`)
-  console.log(`TicketsView: User before restore: ${JSON.stringify(authStore.user)}`)
-  const restored = await authStore.restoreUser()
-  console.log(`TicketsView: User after restore: ${JSON.stringify(authStore.user)}`)
-  console.log(`Iagent ${authStore.isAgent()}`)
-  console.log(`custome ${authStore.isCustomer()}`)
-  if (!restored || !authStore.user) {
-    console.log('TicketsView: No user, redirecting')
-    router.push('/login')
-    return
-  }
-  restoring.value = false
-})
 
 watch(
   () => result.value,
