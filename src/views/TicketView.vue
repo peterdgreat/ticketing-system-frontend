@@ -18,7 +18,10 @@ const comments = ref([])
 const newComment = ref('')
 const attachments = ref([])
 const selectedAttachment = ref(null)
+const createCommentError = ref(null)
 const API_URL = `${import.meta.env.VITE_API_URL}`;
+
+
 
 const { result, loading, error, refetch } = useQuery(
   gql`
@@ -104,7 +107,7 @@ const addComment = async () => {
     commentRefetch()
     newComment.value = ''
   } catch (e) {
-    console.error(e)
+    createCommentError.value = e.message.replace('GraphQL error: ', '');
   }
 }
 const updateStatus = async () => {
@@ -237,6 +240,9 @@ watch(
             >
               Add Comment
             </button>
+            <div v-if="createCommentError" class="text-red-500 mt-2">
+              {{ createCommentError }}
+            </div>
           </form>
         </div>
 
