@@ -1,35 +1,89 @@
-# ticketing-system-frontend
+# Ticketing System Frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+A Vue.js-based frontend application for a ticketing system that allows users to create, manage, and track support tickets.
 
-## Recommended IDE Setup
+## Features
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- User authentication (Login/Signup)
+- Role-based access control (Customer/Agent)
+- Create and manage support tickets
+- File attachments support (images, PDFs, documents)
+- Real-time ticket status updates
+- Ticket comments and discussions
+- Export tickets to CSV (for agents)
 
-## Customize configuration
+## Prerequisites
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+- Node.js (v16 or higher)
+- npm or yarn package manager
+- A running instance of the backend server
 
-## Project Setup
+## Installation
 
-```sh
+1. Clone the repository:
+```bash
+git clone https://github.com/peterdgreat/ticketing-system-frontend
+cd ticketing-system-frontend
+```
+
+2. Install dependencies:
+```bash
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+## Environment Setup
 
-```sh
+Create a `.env.development` file in the root directory for development:
+
+```plaintext
+VITE_API_URL=http://localhost:3000
+```
+
+For production, create a `.env.production` file:
+
+```plaintext
+VITE_API_URL=https://ticketing-system-api-cmdx.onrender.com/graphql
+```
+
+## Development
+
+Start the development server:
+
+```bash
 npm run dev
 ```
 
-### Compile and Minify for Production
+The application will be available at `http://localhost:5173`
 
-```sh
+## Building for Production
+
+Create a production build:
+
+```bash
 npm run build
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+Preview the production build:
 
-```sh
-npm run lint
+```bash
+npm run preview
 ```
+
+
+## Available Scripts
+
+- `npm run dev`: Start development server
+- `npm run build`: Build for production
+- `npm run preview`: Preview production build
+- `npm run lint`: Lint and fix files
+- `npm run format`: Format code with Prettier
+
+
+
+
+## Live preview
+https://ticket-system-web.netlify.app
+
+
+
+        

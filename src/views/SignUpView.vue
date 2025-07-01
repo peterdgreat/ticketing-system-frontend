@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { useAuthStore } from '../stores/auth'
+// import { useAuthStore } from '../stores/auth'
 import { useMutation } from '@vue/apollo-composable'
 import { useRouter } from 'vue-router'
 import gql from 'graphql-tag'
@@ -9,7 +9,7 @@ const email = ref('')
 const error = ref('')
 const password = ref('')
 const role = ref('customer')
-const authStore = useAuthStore()
+// const authStore = useAuthStore()
 const router = useRouter()
 const loading = ref(false)
 
@@ -34,8 +34,11 @@ const signUp = async () => {
       password: password.value,
       role: role.value,
     })
-    authStore.setUser(data.signUp.user, data.signUp.token)
-    router.push('/login')
+    if (data){
+      router.push('/login')
+    }
+    // authStore.setUser(data.signUp.user, data.signUp.token)
+
   } catch (err) {
     loading.value = false
     error.value = err.message.replace('GraphQL error: ', '')
