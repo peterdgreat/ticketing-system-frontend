@@ -11,6 +11,7 @@ const password = ref('')
 const role = ref('customer')
 const authStore = useAuthStore()
 const router = useRouter()
+const loading = ref(false)
 
 const { mutate: signUpMutation } = useMutation(gql`
   mutation SignUp($email: String!, $password: String!, $role: String!) {
@@ -26,6 +27,7 @@ const { mutate: signUpMutation } = useMutation(gql`
 `)
 
 const signUp = async () => {
+  loading.value = true
   try {
     const { data } = await signUpMutation({
       email: email.value,
@@ -35,7 +37,9 @@ const signUp = async () => {
     authStore.setUser(data.signUp.user, data.signUp.token)
     router.push('/login')
   } catch (err) {
+    loading.value = false
     error.value = err.message.replace('GraphQL error: ', '')
+
   }
 }
 </script>
@@ -72,6 +76,8 @@ const signUp = async () => {
         </select>
       </div>
       <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded">Submit</button>
+      <p v-if="error" class="text-red-500 mt-2">{{ error }}</p>
+      <p v-if="loading" class="text-blue-500 mt-2">Loading...</p>
       <p class="mt-4">
         Already have an account? <router-link to="/login" class="text-blue-600">Log in</router-link>
       </p>
