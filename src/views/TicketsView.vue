@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useQuery } from '@vue/apollo-composable'
 import gql from 'graphql-tag'
@@ -10,7 +10,7 @@ const router = useRouter();
 const authStore = useAuthStore()
 const tickets = ref([])
 
-const { result, loading, error } = useQuery(gql`
+const { result, loading, error, refetch } = useQuery(gql`
   query tickets {
     tickets {
       id
@@ -80,6 +80,11 @@ const exportToCSV = () => {
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
 }
+
+onMounted(()=>{
+  refetch()
+})
+
 </script>
 <template>
   <div class="max-w-4xl mx-auto p-6">
