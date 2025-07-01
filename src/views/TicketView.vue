@@ -18,7 +18,7 @@ const comments = ref([])
 const newComment = ref('')
 const attachments = ref([])
 const selectedAttachment = ref(null)
-const backendUrl = 'http://localhost:3000'
+const API_URL = `${import.meta.env.VITE_API_URL}`;
 
 const { result, loading, error, refetch } = useQuery(
   gql`
@@ -126,7 +126,7 @@ const openAttachment = (attachment) => {
 }
 
 const getAttachmentUrl = (fileUrl) => {
-  return fileUrl.startsWith('http') ? fileUrl : `${backendUrl}${fileUrl}`
+  return fileUrl.startsWith('http') ? fileUrl : `${API_URL}${fileUrl}`
 }
 
 
@@ -150,6 +150,8 @@ watch(
     }
   },
 )
+
+
 </script>
 
 <template>
