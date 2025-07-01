@@ -9,7 +9,7 @@ import App from './App.vue'
 import router from './router/route'
 
 const httpLink = createUploadLink({
-  uri: 'http://localhost:3000/graphql',
+  uri: `${import.meta.env.VITE_API_URL}/graphql`,
 });
 
 
