@@ -30,7 +30,7 @@ const login = async () => {
       password: password.value,
     })
     authStore.setUser(data.login.user, data.login.token)
-    router.push('/tickets')
+    router.push('/')
   } catch (err) {
     error.value = err.message.replace('GraphQL error: ', '')
   }
